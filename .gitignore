@@ -1,0 +1,9 @@
+#
+# Liste des fichiers du dépôt à ignorer
+#
+
+# Visual Studio Code
+.vscode
+
+# Binaire généré
+gtk-echec

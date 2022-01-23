@@ -1,0 +1,5 @@
+/* Aspect d'une case de l'échiquier */
+label#case_gris {
+	font-size: 64px;
+	background-color: gray;
+}
