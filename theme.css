@@ -1,5 +1,23 @@
-/* Aspect d'une case de l'échiquier */
+/* */
+/* Fichier de style de l'application */
+/* */
+
+/* Case pour le joueur noir */
 label#case_gris {
 	font-size: 64px;
 	background-color: gray;
+}
+
+/* Case pour le joueur blanc */
+label#case_beige
+{
+	font-size: 64px;
+	background-color: beige;
+}
+
+/* Case de contour */
+label#case_contour
+{
+	font-size: 64px;
+	background-color: black;
 }
