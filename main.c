@@ -5,58 +5,91 @@
 #include <gtk/gtk.h>
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
-// Pièces blancs
 #define BLANC_ROI "♔"
-#define BLANC_REINE "♕"
-#define BLANC_TOUR "♖"
-#define BLANC_FOU "♗"
-#define BLANC_CAVALIER "♘"
-#define BLANC_PION "♙"
-
-// Pièces noires
 #define NOIR_ROI "♚"
+
+#define BLANC_REINE "♕"
 #define NOIR_REINE "♛"
+
 #define NOIR_TOUR "♜"
+#define BLANC_TOUR "♖"
+
+#define BLANC_PION "♙"
+#define NOIR_PION "♟︎"
+
 #define NOIR_FOU "♝"
+#define BLANC_FOU "♗"
+
 #define NOIR_CAVALIER "♞"
-#define NOIR_PION "♟"
+#define BLANC_CAVALIER "♘"
 
 // Contexte de l'application
-typedef struct _ContexteApp
+typedef struct
 {
-	GtkWidget *label[10][10];
-
-	GtkWidget *deplacer_depuis;
-	GtkWidget *deplacer_vers;
+	GtkWidget *label[10][10]; // Stocke les coordonées des cases
+	GtkWidget *source;
+	GtkWidget *destination;
 } ContexteApp;
 
 //
 // Fonction appelée par GTK lors d'une validation de l'utilisateur
 //
-static void gerer_validation(GtkWidget *objet, ContexteApp *ctx)
+static void validation(GtkWidget *objet, ContexteApp *ctx)
 {
+	const gchar *source;
+	const gchar *destination;
+	int colonne;
+	int ligne;
+	int colonne1;
+	int ligne1;
+	const gchar *stock;
+	gchar *stock1;
+
 	// Paramètres non utilisés
 	(void)objet;
 	(void)ctx;
 
+	source = gtk_entry_get_text(GTK_ENTRY(ctx->source));
+	destination = gtk_entry_get_text(GTK_ENTRY(ctx->destination));
+
+	if ((strlen(source) != 2 || (strlen(destination) != 2)))
+	{
+		printf("COORDONNEE NON VALIDES !!! ");
+		exit(-1);
+	}
+
+	colonne = source[0] - 'A' + 1;
+	ligne = 8 - (source[1] - '1');
+
+	colonne1 = destination[0] - 'A' + 1;
+	ligne1 = 8 - (destination[1] - '1');
+
 	// Affiche un message avec les valeurs renseignées pour le déplacement
 	printf(
-		"L'utilisateur a validé son déplacement deplacer_depuis=%s deplacer_vers=%s\n",
-		gtk_entry_get_text(GTK_ENTRY(ctx->deplacer_depuis)),
-		gtk_entry_get_text(GTK_ENTRY(ctx->deplacer_vers)));
+		"L'utilisateur a validé son déplacement source=%s destination=%s\n",
+		gtk_entry_get_text(GTK_ENTRY(ctx->source)),
+		gtk_entry_get_text(GTK_ENTRY(ctx->destination)));
+
+	stock = gtk_label_get_text(GTK_LABEL(ctx->label[colonne][ligne]));
+	stock1 = strdup(stock);
+
+	gtk_label_set_text(GTK_LABEL(ctx->label[colonne][ligne]), "");
+	gtk_label_set_text(GTK_LABEL(ctx->label[colonne1][ligne1]), stock1);
 
 	// Remet à zéro les entrées
-	gtk_entry_set_text(GTK_ENTRY(ctx->deplacer_depuis), "");
-	gtk_entry_set_text(GTK_ENTRY(ctx->deplacer_vers), "");
+	gtk_entry_set_text(GTK_ENTRY(ctx->source), "");
+	gtk_entry_set_text(GTK_ENTRY(ctx->destination), "");
+
+	free(stock1);
 }
 
-//
-// Affiche les positions des pièces sur l'échiquier
-//
-static void echiquier_afficher_positions(ContexteApp *ctx)
+// Affiche la position des pieces
+static void pieces_position(ContexteApp *ctx)
 {
-	for (int i = 1; i < 9; ++i)
+	for (int i = 1; i <= 8; ++i)
 	{
 		gchar text[2];
 
@@ -65,66 +98,11 @@ static void echiquier_afficher_positions(ContexteApp *ctx)
 
 		// Affiche les lettres de 'A' à 'H'
 		text[0] = 'A' + i - 1;
-		gtk_label_set_text(GTK_LABEL(ctx->label[i][0]), text);
 		gtk_label_set_text(GTK_LABEL(ctx->label[i][9]), text);
 
 		// Affiche les nombres de '8' à '1'
 		text[0] = '8' - i + 1;
 		gtk_label_set_text(GTK_LABEL(ctx->label[0][i]), text);
-		gtk_label_set_text(GTK_LABEL(ctx->label[9][i]), text);
-	}
-}
-
-//
-// Affiche toutes les pièces de l'échiquier dans leurs positions initiales
-//
-static void echiquier_afficher_pieces(ContexteApp *ctx)
-{
-	for (int i = 1; i < 9; ++i)
-	{
-		// Affiche les pions
-		gtk_label_set_text(GTK_LABEL(ctx->label[i][2]), NOIR_PION);
-		gtk_label_set_text(GTK_LABEL(ctx->label[i][7]), BLANC_PION);
-
-		switch (i)
-		{
-		case 1:
-		case 8:
-			// Affiche les tours
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][1]), NOIR_TOUR);
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][8]), BLANC_TOUR);
-			break;
-
-		case 2:
-		case 7:
-			// Affiche les cavaliers
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][1]), NOIR_CAVALIER);
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][8]), BLANC_CAVALIER);
-			break;
-
-		case 3:
-		case 6:
-			// Affiche les fous
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][1]), NOIR_FOU);
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][8]), BLANC_FOU);
-			break;
-
-		case 4:
-			// Affiche les reines
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][1]), NOIR_REINE);
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][8]), BLANC_REINE);
-			break;
-
-		case 5:
-			// Affiche les rois
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][1]), NOIR_ROI);
-			gtk_label_set_text(GTK_LABEL(ctx->label[i][8]), BLANC_ROI);
-			break;
-
-		default:
-			// Impossible
-			break;
-		}
 	}
 }
 
@@ -147,10 +125,7 @@ int main(int argc, char **argv)
 	// Chargement du fichier de style
 	GtkCssProvider *cssProvider = gtk_css_provider_new();
 	gtk_css_provider_load_from_path(cssProvider, "theme.css", NULL);
-	gtk_style_context_add_provider_for_screen(
-		gdk_screen_get_default(),
-		GTK_STYLE_PROVIDER(cssProvider),
-		GTK_STYLE_PROVIDER_PRIORITY_USER);
+	gtk_style_context_add_provider_for_screen(gdk_screen_get_default(), GTK_STYLE_PROVIDER(cssProvider), GTK_STYLE_PROVIDER_PRIORITY_USER);
 
 	// Création la fenêtre principale
 	fenetre = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -176,7 +151,7 @@ int main(int argc, char **argv)
 			// On distingue une case sur deux pour l'échiquier ainsi que le contour
 			if ((ligne == 0) || (ligne == 9) || (colonne == 0) || (colonne == 9))
 			{
-				gtk_widget_set_name(ctx->label[colonne][ligne], "case_contour");
+				gtk_widget_set_name(ctx->label[colonne][ligne], "case_noire");
 			}
 			else if (((colonne + ligne) % 2) == 0)
 			{
@@ -189,33 +164,64 @@ int main(int argc, char **argv)
 		}
 	}
 
-	// Affiche les positions
-	echiquier_afficher_positions(ctx);
+	// Positionnement des pièces
+	gtk_label_set_text(GTK_LABEL(ctx->label[5][1]), NOIR_ROI);
+	gtk_label_set_text(GTK_LABEL(ctx->label[5][8]), BLANC_ROI);
 
-	// Affiche les pièces dans leurs positions initiales
-	echiquier_afficher_pieces(ctx);
+	gtk_label_set_text(GTK_LABEL(ctx->label[4][8]), BLANC_REINE);
+	gtk_label_set_text(GTK_LABEL(ctx->label[4][1]), NOIR_REINE);
+
+	gtk_label_set_text(GTK_LABEL(ctx->label[1][1]), NOIR_TOUR);
+	gtk_label_set_text(GTK_LABEL(ctx->label[8][1]), NOIR_TOUR);
+
+	gtk_label_set_text(GTK_LABEL(ctx->label[1][8]), BLANC_TOUR);
+	gtk_label_set_text(GTK_LABEL(ctx->label[8][8]), BLANC_TOUR);
+
+	gtk_label_set_text(GTK_LABEL(ctx->label[3][1]), NOIR_FOU);
+	gtk_label_set_text(GTK_LABEL(ctx->label[6][1]), NOIR_FOU);
+	gtk_label_set_text(GTK_LABEL(ctx->label[3][8]), BLANC_FOU);
+	gtk_label_set_text(GTK_LABEL(ctx->label[6][8]), BLANC_FOU);
+
+	gtk_label_set_text(GTK_LABEL(ctx->label[2][1]), NOIR_CAVALIER);
+	gtk_label_set_text(GTK_LABEL(ctx->label[7][1]), NOIR_CAVALIER);
+	gtk_label_set_text(GTK_LABEL(ctx->label[2][8]), BLANC_CAVALIER);
+	gtk_label_set_text(GTK_LABEL(ctx->label[7][8]), BLANC_CAVALIER);
+
+	for (int i = 1; i <= 8; ++i)
+	{
+
+		gtk_label_set_text(GTK_LABEL(ctx->label[i][2]), NOIR_PION);
+	}
+
+	for (int i = 1; i <= 8; ++i)
+	{
+		gtk_label_set_text(GTK_LABEL(ctx->label[i][7]), BLANC_PION);
+	}
+
+	pieces_position(ctx);
 
 	// Crée une entrée dans laquelle l'utilisateur peut renseigner la position de la pièce à déplacer
-	ctx->deplacer_depuis = gtk_entry_new();
-	objet = gtk_label_new("pièce en");
+	ctx->source = gtk_entry_new();
+	objet = gtk_label_new("Déplacer de : ");
 	gtk_grid_attach(GTK_GRID(grille), objet, 11, 3, 1, 1);
-	gtk_grid_attach(GTK_GRID(grille), ctx->deplacer_depuis, 12, 3, 1, 1);
+	gtk_grid_attach(GTK_GRID(grille), ctx->source, 12, 3, 1, 1);
 
 	// Crée une entrée dans laquelle l'utilisateur peut renseigner la position vers laquelle déplacer la pièce
-	ctx->deplacer_vers = gtk_entry_new();
-	objet = gtk_label_new("vers");
+	ctx->destination = gtk_entry_new();
+	objet = gtk_label_new("Vers : ");
 	gtk_grid_attach(GTK_GRID(grille), objet, 11, 4, 1, 1);
-	gtk_grid_attach(GTK_GRID(grille), ctx->deplacer_vers, 12, 4, 1, 1);
+	gtk_grid_attach(GTK_GRID(grille), ctx->destination, 12, 4, 1, 1);
 
 	// Crée un bouton de validation du déplacement
 	objet = gtk_button_new();
 	gtk_button_set_label(GTK_BUTTON(objet), "Valider");
-	g_signal_connect(G_OBJECT(objet), "clicked", G_CALLBACK(gerer_validation), ctx);
-	gtk_grid_attach(GTK_GRID(grille), objet, 11, 5, 2, 1);
+	g_signal_connect(G_OBJECT(objet), "clicked", G_CALLBACK(validation), ctx);
+	gtk_grid_attach(GTK_GRID(grille), objet, 12, 5, 1, 1);
 
-	// Libération du contexte de l'application
 	gtk_widget_show_all(fenetre);
 	gtk_main();
+
+	// Libération du contexte de l'application
 	g_slice_free(ContexteApp, ctx);
 
 	return EXIT_SUCCESS;
